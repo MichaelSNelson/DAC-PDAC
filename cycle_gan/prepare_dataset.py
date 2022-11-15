@@ -22,7 +22,7 @@ def prepare_dataset(data_dir, classes, train=1, val=0, test=0):
     for c in classes:
         class_dir = os.path.join(data_dir, str(c))
 
-        f_in_d = [os.path.join(class_dir, f) for f in os.listdir(class_dir) if f.endswith(".png")]
+        f_in_d = [os.path.join(class_dir, f) for f in os.listdir(class_dir) if f.endswith(".tif")]
         class_to_files[c] = f_in_d
 
     for pair in class_combinations:

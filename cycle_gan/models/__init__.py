@@ -19,6 +19,7 @@ See our template model class 'template_model.py' for more details.
 """
 
 import importlib
+#import torch.nn as nn
 from models.base_model import BaseModel
 
 

@@ -21,7 +21,7 @@ def start_training(train_setup,
     for data_root in data_roots:
         base_cmd = f"{submit_cmd} -u cycle_gan/train.py" +\
                    " --dataroot {} --name {} --input_nc 1 --output_nc 1 --netG {} --load_size {}"+\
-                   " --crop_size {} --checkpoints_dir {} --display_id 0"
+                   " --crop_size {} --checkpoints_dir {} --display_id 0 --batch_size 20"
 
         if continue_train:
             base_cmd += " --continue_train"
@@ -92,11 +92,24 @@ def train_synapses(train_setup, data_root, submit_cmd):
                    in_size=128,
                    submit_cmd=submit_cmd)
 
+def train_PDAC(train_setup, data_root, submit_cmd):
+    classes = ["normal", "tumor"]
+    datasets = [f"{i}_{j}" for i,j in list(itertools.combinations([k for k in classes], 2))]
+
+    data_roots = []
+    for d in datasets:
+        data_roots.append(f"{data_root}/{d}")
+    start_training(train_setup = train_setup,
+                   data_roots = data_roots,
+                   in_size = 512,
+                   submit_cmd=submit_cmd)
+
 if __name__ == "__main__":
     exp_to_f = {"mnist": train_mnist,
                 "synapses": train_synapses,
                 "disc_a": train_disc_a,
-                "disc_b": train_disc_b}
+                "disc_b": train_disc_b,
+                "normal_tumor": train_PDAC}
     args = parser.parse_args()
     f_train = exp_to_f[args.experiment]
     f_train(args.setup, args.data_root, args.submit_cmd)

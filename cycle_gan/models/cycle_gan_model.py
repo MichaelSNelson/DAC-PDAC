@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import itertools
 from util.image_pool import ImagePool
@@ -43,7 +44,7 @@ class CycleGANModel(BaseModel):
         parser.add_argument('--aux_net', type=str, help='Network to use for aux loss', default=None)
         parser.add_argument('--aux_checkpoint', type=str, help='Checkpoint path for weights of aux network', default=None)
         parser.add_argument('--aux_input_size', type=int, default=128, help='input size of auxiliary model, must be 128 or 256')
-        parser.add_argument('--aux_input_nc', type=int, default=1, help='# of input image channels of aux net: 3 for RGB and 1 for grayscale')
+        parser.add_argument('--aux_input_nc', type=int, default=3, help='# of input image channels of aux net: 3 for RGB and 1 for grayscale')
         parser.add_argument('--aux_class_A', type=int, default=0, help='class index of class A in the output of aux net')
         parser.add_argument('--aux_class_B', type=int, default=0, help='class index of class B in the output of aux net')
 
@@ -145,12 +146,22 @@ class CycleGANModel(BaseModel):
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
+        #added to allow the use of multiple GPUs msn
+#    def multi_gpu(self, ids):
+#        self.netG_B = nn.DataParallel(self.netG_B, device_ids = [0,1,2,3,4])
+#        self.netG_A = nn.DataParallel(self.netG_A, device_ids = [0,1,2,3,4])
+#        self.netD_A = nn.DataParallel(self.netD_A, device_ids = [0,1,2,3,4])
+#        self.netD_B = nn.DataParallel(self.netD_B, device_ids = [0,1,2,4,5])
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
+        self.real_A.to(cuda:0)
         self.fake_B = self.netG_A(self.real_A)  # G_A(A)
+        self.fake_B.to(cuda:2)
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
+        self.real_b.to(cuda:3)
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
+        self.fake_A.to(cuda:4)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
        
         # AUX
