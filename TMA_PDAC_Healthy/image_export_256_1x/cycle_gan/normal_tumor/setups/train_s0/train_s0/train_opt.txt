@@ -2,10 +2,10 @@
            aux_checkpoint: None                          
               aux_class_A: 0                             
               aux_class_B: 0                             
-             aux_input_nc: 1                             
+             aux_input_nc: 3                             
            aux_input_size: 128                           
                   aux_net: None                          
-               batch_size: 20                            	[default: 1]
+               batch_size: 4                             	[default: 1]
                     beta1: 0.5                           
           checkpoints_dir: TMA_PDAC_Healthy/image_export_256_1x/cycle_gan/normal_tumor/setups/train_s0	[default: ./checkpoints]
            continue_train: False                         
@@ -26,7 +26,7 @@
                   gpu_ids: 0                             
                 init_gain: 0.02                          
                 init_type: normal                        
-                 input_nc: 1                             
+                 input_nc: 3                             
                   isTrain: True                          	[default: None]
                  lambda_A: 10.0                          
                  lambda_B: 10.0                          
@@ -50,8 +50,8 @@
                   no_flip: True                          
                   no_html: False                         
                      norm: instance                      
-              num_threads: 4                             
-                output_nc: 1                             
+              num_threads: 8                             
+                output_nc: 3                             
                     phase: train                         
                 pool_size: 50                            
                preprocess: none                          

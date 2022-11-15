@@ -20,8 +20,8 @@ def start_training(train_setup,
 
     for data_root in data_roots:
         base_cmd = f"{submit_cmd} -u cycle_gan/train.py" +\
-                   " --dataroot {} --name {} --input_nc 1 --output_nc 1 --netG {} --load_size {}"+\
-                   " --crop_size {} --checkpoints_dir {} --display_id 0 --batch_size 20"
+                   " --dataroot {} --name {} --input_nc 3 --output_nc 3 --netG {} --load_size {}"+\
+                   " --crop_size {} --checkpoints_dir {} --display_id 0 --batch_size 4"
 
         if continue_train:
             base_cmd += " --continue_train"

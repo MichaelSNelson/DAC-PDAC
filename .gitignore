@@ -1,5 +1,5 @@
 # ignore everything
-*
+**/TMA_PDAC_Healthy/*
 
 # but don't ignore files ending with slash = directories
 !*/

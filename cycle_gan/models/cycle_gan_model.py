@@ -62,6 +62,8 @@ class CycleGANModel(BaseModel):
             opt (Option class)-- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         # Check consistency of aux model and cycle gan:
+        print(opt.input_nc)
+        print(opt.aux_input_nc)
         assert(opt.input_nc == opt.aux_input_nc)
         if opt.preprocess != 'none':
             raise Warning("Preprocessing enabled, this might mess with attributions.")
@@ -147,21 +149,24 @@ class CycleGANModel(BaseModel):
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
         #added to allow the use of multiple GPUs msn
-#    def multi_gpu(self, ids):
-#        self.netG_B = nn.DataParallel(self.netG_B, device_ids = [0,1,2,3,4])
-#        self.netG_A = nn.DataParallel(self.netG_A, device_ids = [0,1,2,3,4])
-#        self.netD_A = nn.DataParallel(self.netD_A, device_ids = [0,1,2,3,4])
-#        self.netD_B = nn.DataParallel(self.netD_B, device_ids = [0,1,2,4,5])
+        #TODO use a list
+#    def multi_gpu(self):
+#        self.netG_B.to('cuda:0')
+#        self.netG_A.to('cuda:2')
+#        self.netD_A.to('cuda:3')
+#        self.netD_B.to('cuda:4')
 
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        self.real_A.to(cuda:0)
+#        self.real_A.to('cuda:2')
+
+#        self.netG_A.to('cuda:2')
         self.fake_B = self.netG_A(self.real_A)  # G_A(A)
-        self.fake_B.to(cuda:2)
+#        self.fake_B.to('cuda:0')
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
-        self.real_b.to(cuda:3)
+#        self.real_B.to('cuda:0')
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
-        self.fake_A.to(cuda:4)
+#        self.fake_A.to('cuda:2')
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
        
         # AUX
@@ -196,6 +201,7 @@ class CycleGANModel(BaseModel):
         We also call loss_D.backward() to calculate the gradients.
         """
         # Real
+#        device = next(netD.parameters()).device
         pred_real = netD(real)
         loss_D_real = self.criterionGAN(pred_real, True)
         # Fake
@@ -225,9 +231,11 @@ class CycleGANModel(BaseModel):
         # Identity loss
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed: ||G_A(B) - B||
+            #device = next(netG_A.parameters()).device
             self.idt_A = self.netG_A(self.real_B)
             self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
             # G_B should be identity if real_A is fed: ||G_B(A) - A||
+            #device = next(netG_B.parameters()).device
             self.idt_B = self.netG_B(self.real_A)
             self.loss_idt_B = self.criterionIdt(self.idt_B, self.real_A) * lambda_A * lambda_idt
         else:

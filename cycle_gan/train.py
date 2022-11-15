@@ -32,8 +32,9 @@ if __name__ == '__main__':
     print('The number of training images = %d' % dataset_size)
 
     model = create_model(opt)      # create a model given opt.model and other options
+   # model.multi_gpu()
     model.setup(opt)               # regular setup: load and print networks; create schedulers
-   # model.multi_gpu([0,1,2,3,4,5,6,7])
+
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
     total_iters = 0                # the total number of training iterations
 
