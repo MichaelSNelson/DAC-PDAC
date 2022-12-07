@@ -3,7 +3,7 @@ from torch import nn
 import math
 
 class ResNet(nn.Module):
-    def __init__(self, output_classes, input_size=(128,128), input_channels=1):
+    def __init__(self, output_classes, input_size=(128,128), input_channels=3):
         super(ResNet, self).__init__()
         self.in_channels = 12
         size = input_size[0]

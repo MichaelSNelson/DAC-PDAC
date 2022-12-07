@@ -6,11 +6,22 @@ from torch.optim import lr_scheduler
 import torch.nn.functional as F
 from dac_networks.Vgg2D import Vgg2D
 from dac_networks.ResNet import ResNet
+import pathlib
+import platform
+
+from fastai.learner import load_learner
 
 ###############################################################################
 # Helper Functions
 ###############################################################################
+def is_PDAC(x):
+    if "ductal adenocarcinoma" in x:
+        return True
+    else:
+        return False
 
+plat = platform.system()
+if plat == 'Linux': pathlib.WindowsPath = pathlib.PosixPath
 
 class Identity(nn.Module):
     def forward(self, x):
@@ -375,7 +386,7 @@ class ResnetGenerator(nn.Module):
         return self.model(input)
 
 def define_AUX(checkpoint_path, input_size=128, aux_net="vgg2d", output_classes=6, 
-               downsample_factors=[(2,2), (2,2), (2,2), (2,2)], input_nc=1, gpu_ids=[]):
+               downsample_factors=[(2,2), (2,2), (2,2), (2,2)], input_nc=3, gpu_ids=[]):
     """
     checkpoint_path: Path to train checkpoint to restore weights from
 
@@ -390,6 +401,7 @@ def define_AUX(checkpoint_path, input_size=128, aux_net="vgg2d", output_classes=
                     output_classes=output_classes)
     elif aux_net == "res":
         net = ResNet(output_classes, (input_size, input_size), input_nc)
+        #net = ResNet(output_classes, (input_size, input_size), 3)
     else:
         raise NotImplementedError
 
@@ -401,9 +413,25 @@ def define_AUX(checkpoint_path, input_size=128, aux_net="vgg2d", output_classes=
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     net.to(device)
-    checkpoint = torch.load(checkpoint_path)
-    net.load_state_dict(checkpoint)
-    return net
+    print(checkpoint_path)
+    #learner = load_learner(checkpoint_path)
+    #checkpoint = learner.model
+
+    #change recommended by Elias
+    #f = open(checkpoint_path, 'rb')
+    #checkpoint = pickle.load(f)
+    #checkpoint = pickle.load(checkpoint_path)
+    #return checkpoint.model
+    learner = load_learner(checkpoint_path)
+    checkpoint = learner.model
+    checkpoint.to(device)
+    return learner.model
+####################################################################
+    ### THese sort of work in that I can load the checkpoint but fails to match the network.
+    ###checkpoint = torch.load(checkpoint_path)
+    ###net.load_state_dict(checkpoint)
+    ###return net
+    ####################################################################
 
 class ResnetBlock(nn.Module):
     """Define a Resnet block"""

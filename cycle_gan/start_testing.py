@@ -120,7 +120,11 @@ def get_config(experiment):
                           "synapses": {"classes": ["gaba", "acetylcholine", "glutamate","serotonin", "octopamine", "dopamine"],
                                        "input_size": 128,
                                        "num_test": 500,
-                                       "aux_downsample_factors": [(2,2),(2,2),(2,2),(2,2)]}}
+                                       "aux_downsample_factors": [(2,2),(2,2),(2,2),(2,2)]},
+                          "PDAC": {"classes": ["normal", "tumor"],
+                                   "input_size": 512,
+                                   "num_test": 2000,
+                                   "aux_downsample_factors": [(2,2),(2,2),(2,2),(2,2)]}}   
 
     return experiment_to_cfg[experiment]
 

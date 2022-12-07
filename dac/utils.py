@@ -35,9 +35,24 @@ def save_image(array, image_path, renorm=True, norm=False):
     if norm:
         array/=np.max(np.abs(array))
         array *= 255
-
-    im = Image.fromarray(array)
-    im = im.convert('RGB')
+    #print("initial save type")
+    #print(type(array))
+    arrayb = []
+    arrayb = array
+    #arrayb = torch.from_numpy(array)
+    if torch.is_tensor(array):
+        #print(array.shape)
+        array = array.squeeze()
+        array = array.permute(1,2,0)
+        #print(array.shape)
+        #print("moving to cpu")
+        arrayb = array.cpu() #numpy.ndarray has no attribute cpu
+        arrayb = np.asarray(arrayb) #cannot convert cuda device type tensor to numpy
+    #print(type(arrayb))
+    #print(arrayb.shape)
+    #print(arrayb)
+    im = Image.fromarray(arrayb, 'RGB')
+    #im = im.convert('RGB')
     im.save(image_path)
 
 def get_all_pairs(classes):

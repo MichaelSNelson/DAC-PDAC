@@ -13,6 +13,23 @@ from dac.activations import project_layer_activations_to_input_rescale
 from dac.stereo_gc import get_sgc
 from dac_networks import init_network
 
+import pathlib
+import platform
+
+from fastai.learner import load_learner
+
+###############################################################################
+# Helper Functions
+###############################################################################
+def is_PDAC(x):
+    if "ductal adenocarcinoma" in x:
+        return True
+    else:
+        return False
+
+plat = platform.system()
+if plat == 'Linux': pathlib.WindowsPath = pathlib.PosixPath
+
 torch.manual_seed(123)
 np.random.seed(123)
 
@@ -84,13 +101,18 @@ def get_attribution(real_img,
             Return both attribution directions.
     '''
 
-    imgs = [image_to_tensor(normalize_image(real_img).astype(np.float32)), 
-            image_to_tensor(normalize_image(fake_img).astype(np.float32))]
+    imgs = [torch.transpose(torch.squeeze(image_to_tensor(normalize_image(real_img).astype(np.float32))), 2,0), 
+                          torch.transpose(torch.squeeze(image_to_tensor(normalize_image(fake_img).astype(np.float32))), 2,0)]
+    #print(imgs[0].shape)
 
+    
     classes = [real_class, fake_class]
-    net = init_network(checkpoint_path, input_shape, net_module, channels, output_classes=output_classes,eval_net=True, require_grad=False,
-                       downsample_factors=downsample_factors)
-
+    #net = init_network(checkpoint_path, input_shape, net_module, channels, output_classes=output_classes,eval_net=True, require_grad=False,
+    #                   downsample_factors=downsample_factors)
+    device = torch.device('cuda')
+    learner = load_learner(checkpoint_path)
+    net= learner.model
+    net.to(device)
     attrs = []
     attrs_names = []
 
@@ -114,10 +136,12 @@ def get_attribution(real_img,
         layer_name = last_conv_layer[0]
         layer = last_conv_layer[1]
         layer_gc = LayerGradCam(net, layer)
-        gc_real = layer_gc.attribute(imgs[0], target=classes[0])
+
+        gc_real = layer_gc.attribute(torch.unsqueeze(imgs[0],0), target=classes[0])
 
         gc_real = project_layer_activations_to_input_rescale(gc_real.cpu().detach().numpy(), (input_shape[0], input_shape[1]))
-
+        #print("gc_real")
+        #print(gc_real)
         attrs.append(torch.tensor(gc_real[0,0,:,:]))
         attrs_names.append("gc")
 
@@ -175,8 +199,8 @@ def get_attribution(real_img,
         baseline = image_to_tensor(np.zeros(input_shape, dtype=np.float32))
         net.zero_grad()
         ig = IntegratedGradients(net)
-        ig_real, delta_real = ig.attribute(imgs[0], baseline, target=classes[0], return_convergence_delta=True)
-        ig_diff_1, delta_diff = ig.attribute(imgs[1], imgs[0], target=classes[1], return_convergence_delta=True)
+        ig_real, delta_real = ig.attribute(imgs[0].unsqueeze(0), baseline, target=classes[0], return_convergence_delta=True)
+        ig_diff_1, delta_diff = ig.attribute(imgs[1], imgs[0].unsqueeze(0), target=classes[1], return_convergence_delta=True)
 
         attrs.append(ig_real[0,0,:,:])
         attrs_names.append("ig")
@@ -198,8 +222,8 @@ def get_attribution(real_img,
     if "dl" in methods:
         net.zero_grad()
         dl = DeepLift(net)
-        dl_real = dl.attribute(imgs[0], target=classes[0])
-        dl_diff_1 = dl.attribute(imgs[1], baselines=imgs[0], target=classes[1])
+        dl_real = dl.attribute(imgs[0].unsqueeze(0), target=classes[0])
+        dl_diff_1 = dl.attribute(imgs[1].unsqueeze(0), baselines=imgs[0].unsqueeze(0), target=classes[1])
 
         attrs.append(dl_real[0,0,:,:])
         attrs_names.append("dl")
@@ -220,15 +244,15 @@ def get_attribution(real_img,
     if "ingrad" in methods:
         net.zero_grad()
         saliency = Saliency(net)
-        grads_real = saliency.attribute(imgs[0], 
+        grads_real = saliency.attribute(torch.unsqueeze(imgs[0],0), 
                                         target=classes[0]) 
-        grads_fake = saliency.attribute(imgs[1], 
+        grads_fake = saliency.attribute(torch.unsqueeze(imgs[1],0), 
                                         target=classes[1]) 
 
 
         net.zero_grad()
         input_x_gradient = InputXGradient(net)
-        ingrad_real = input_x_gradient.attribute(imgs[0], target=classes[0])
+        ingrad_real = input_x_gradient.attribute(torch.unsqueeze(imgs[0],0), target=classes[0])
 
         ingrad_diff_0 = grads_fake * (imgs[0] - imgs[1])
    
@@ -239,7 +263,7 @@ def get_attribution(real_img,
         attrs_names.append("d_ingrad")
 
         if bidirectional:
-            ingrad_fake = input_x_gradient.attribute(imgs[1], target=classes[1])
+            ingrad_fake = input_x_gradient.attribute(torch.unsqueeze(imgs[1],0), target=classes[1])
             attrs.append(torch.abs(ingrad_fake[0,0,:,:]))
             attrs_names.append("ingrad_fake")
 

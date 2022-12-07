@@ -7,10 +7,10 @@
                   aux_net: None                          
                batch_size: 4                             	[default: 1]
                     beta1: 0.5                           
-          checkpoints_dir: TMA_PDAC_Healthy/image_export_256_1x/cycle_gan/normal_tumor/setups/train_s0	[default: ./checkpoints]
-           continue_train: False                         
+          checkpoints_dir: /home/msnelson8/data2/msnelson/DAC-PDAC/TMA_PDAC_Healthy/image_export_256_1x/cycle_gan/normal_tumor/setups/train_s0	[default: ./checkpoints]
+           continue_train: True                          	[default: False]
                 crop_size: 512                           	[default: 128]
-                 dataroot: TMA_PDAC_Healthy/image_export_256_1x/cycle_gan/normal_tumor	[default: None]
+                 dataroot: /home/msnelson8/data2/msnelson/DAC-PDAC/TMA_PDAC_Healthy/image_export_256_1x/cycle_gan/normal_tumor	[default: None]
              dataset_mode: unaligned                     
                 direction: AtoB                          
               display_env: main                          

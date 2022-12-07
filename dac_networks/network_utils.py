@@ -3,6 +3,21 @@ import torch
 import torch.nn.functional as F
 
 from dac.utils import image_to_tensor
+import pathlib
+import platform
+
+from fastai.learner import load_learner
+###############################################################################
+# Helper Functions
+###############################################################################
+def is_PDAC(x):
+    if "ductal adenocarcinoma" in x:
+        return True
+    else:
+        return False
+
+plat = platform.system()
+if plat == 'Linux': pathlib.WindowsPath = pathlib.PosixPath
 
 def init_network(checkpoint_path=None, input_shape=(128,128), net_module="Vgg2D", 
                  input_nc=1, output_classes=6, gpu_ids=[], eval_net=True, require_grad=False,
@@ -16,6 +31,9 @@ def init_network(checkpoint_path=None, input_shape=(128,128), net_module="Vgg2D"
     """
     net_mod = importlib.import_module(f"dac_networks.{net_module}")
     net_class = getattr(net_mod, f'{net_module}')
+    ###
+    #Not sure about net definition
+    ###
     if net_module == "Vgg2D":
         net = net_class(input_size=input_shape, input_channels=input_nc, output_classes=output_classes,
                         downsample_factors=downsample_factors)
@@ -36,7 +54,13 @@ def init_network(checkpoint_path=None, input_shape=(128,128), net_module="Vgg2D"
             param.requires_grad = False
 
     if checkpoint_path is not None:
-        checkpoint = torch.load(checkpoint_path, map_location=device)
+        learner = load_learner(checkpoint_path)
+        checkpoint = learner.model
+        checkpoint.to(device)
+        return learner.model
+
+        #checkpoint = torch.load(checkpoint_path, map_location=device)
+        #checkpoint = checkpoint.model
         try:
             net.load_state_dict(checkpoint['model_state_dict'])
         except KeyError:
@@ -48,6 +72,8 @@ def run_inference(net, im):
     Net: network object
     input_image: Normalized 2D input image.
     """
+
     im_tensor = image_to_tensor(im)
+
     class_probs = F.softmax(net(im_tensor), dim=1)
     return class_probs

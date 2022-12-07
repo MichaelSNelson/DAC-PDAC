@@ -15,7 +15,7 @@ def start_training(train_setup,
                    data_roots,
                    netG="resnet_9blocks",
                    in_size=128,
-                   continue_train=False,
+                   continue_train=True,
                    submit_cmd="python"):
 
     for data_root in data_roots:

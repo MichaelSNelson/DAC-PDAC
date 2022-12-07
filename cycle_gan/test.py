@@ -35,6 +35,11 @@ from util.visualizer import save_images
 from util import html_util
 import ntpath
 
+def is_PDAC(x):
+    if "ductal adenocarcinoma" in x:
+        return True
+    else:
+        return False
 
 if __name__ == '__main__':
     opt = TestOptions().parse()  # get test options

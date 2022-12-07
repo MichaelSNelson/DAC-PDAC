@@ -80,7 +80,8 @@ def get_sgc(real_img, fake_img, real_class, fake_class,
 
     delta_fake_projected = project_layer_activations_to_input_rescale(delta_fake, (input_shape[0], input_shape[1]))[0,:,:,:]
     delta_real_projected = project_layer_activations_to_input_rescale(delta_real, (input_shape[0], input_shape[1]))[0,:,:,:]
-
+    print("delta fake")
+    print(delta_real_projected.shape)
     channels = np.shape(delta_fake_projected)[0]
     gc_0 = np.zeros(np.shape(delta_fake_projected)[1:])
     gc_1 = np.zeros(np.shape(delta_real_projected)[1:])

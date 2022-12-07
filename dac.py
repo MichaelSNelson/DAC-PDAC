@@ -5,6 +5,18 @@ from dac.utils import open_image, save_image
 from dac.attribute import get_attribution
 from dac.mask import get_mask
 
+import pathlib
+import platform
+
+#######Helper
+def is_PDAC(x):
+    if "ductal adenocarcinoma" in x:
+        return True
+    else:
+        return False
+plat = platform.system()
+if plat == 'Linux': pathlib.WindowsPath = pathlib.PosixPath
+###########
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--net", help="Name of network module in networks", required=True)
@@ -31,8 +43,8 @@ parser.add_argument("--downsample_factors", nargs="+", default=[2,2,2,2,2,2,2,2]
 if __name__ == "__main__":
     args = parser.parse_args()
     input_shape = (int(args.input_shape[0]), int(args.input_shape[1]))
-    real_img = open_image(args.realimg, flatten=True, normalize=False)
-    fake_img = open_image(args.fakeimg, flatten=True, normalize=False)
+    real_img = open_image(args.realimg, flatten=False, normalize=False)
+    fake_img = open_image(args.fakeimg, flatten=False, normalize=False)
 
     methods = []
 
@@ -61,15 +73,16 @@ if __name__ == "__main__":
 
     mrf_scores = []
     mask_sizes = []
-
+#####################
     # Fixed for now:
     channels = 1
-
+###########what###########
     if args.net.lower() in ["vgg", "vgg2d"]:
         net = "Vgg2D"
     elif args.net.lower() in ["res", "resnet"]:
         net = "ResNet"
-
+    #print("indac.py")
+    #print(real_img.shape)
     attrs, attrs_names = get_attribution(real_img, fake_img,
                                          args.realclass, args.fakeclass,
                                          net, args.checkpoint,
@@ -95,6 +108,8 @@ if __name__ == "__main__":
             if not os.path.exists(threshold_dir):
                 os.makedirs(threshold_dir)
             for mask_im, mask_name in zip(mask_imgs, img_names):
+                #print("dac.py")
+                #print(mask_im.shape)
                 save_image(mask_im, os.path.join(threshold_dir, mask_name + ".png"))
             k += 1
 
