@@ -15,7 +15,7 @@ def normalize_image(image):
     """
     return (image.astype(np.float32)/255. - 0.5)/0.5
 
-def open_image(image_path, flatten=True, normalize=True):
+def open_image(image_path, flatten=False, normalize=False):
     im = np.asarray(Image.open(image_path))
     if flatten:
         im = flatten_image(im)
@@ -30,6 +30,7 @@ def image_to_tensor(image):
     return image_tensor
 
 def save_image(array, image_path, renorm=True, norm=False):
+
     if renorm:
         array = (array *0.5 + 0.5)*255
     if norm:
@@ -43,15 +44,26 @@ def save_image(array, image_path, renorm=True, norm=False):
     if torch.is_tensor(array):
         #print(array.shape)
         array = array.squeeze()
-        array = array.permute(1,2,0)
+
         #print(array.shape)
         #print("moving to cpu")
         arrayb = array.cpu() #numpy.ndarray has no attribute cpu
+        #if len(array.shape) == 3:
+        #    arrayb = arrayb.permute(1,2,0)
         arrayb = np.asarray(arrayb) #cannot convert cuda device type tensor to numpy
     #print(type(arrayb))
-    #print(arrayb.shape)
+    #print(image_path)
+    #print("output image shape ", str(arrayb.shape)) #masks are 256,256,3. attr, real, fake are all 256,256
     #print(arrayb)
-    im = Image.fromarray(arrayb, 'RGB')
+    #print(arrayb.shape)
+    #for some reason saving a 2D numpy array "as RGB" generates a rainbow image, not a grayscale image
+    if len(arrayb.shape) == 2:
+        im = Image.fromarray(arrayb, mode='L')
+    else:
+        im = Image.fromarray(arrayb.astype(np.uint8),'RGB')
+        #pixels = np.asarray(im)
+    #print(pixels)
+    #im = Image.fromarray(arrayb)
     #im = im.convert('RGB')
     im.save(image_path)
 

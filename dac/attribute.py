@@ -17,7 +17,7 @@ import pathlib
 import platform
 
 from fastai.learner import load_learner
-
+from PIL import Image
 ###############################################################################
 # Helper Functions
 ###############################################################################
@@ -117,9 +117,34 @@ def get_attribution(real_img,
     attrs_names = []
 
     if "residual" in methods:
-        res = np.abs(real_img - fake_img)
+        #print("residual called ")
+        #print(np.max(real_img), np.min(real_img), np.max(fake_img), np.min(fake_img))
+        res = real_img - fake_img
+        #print(np.max(res), np.min(res))
+        res = np.abs(res)
+        #save_image(res, "ressubtracted.png", renorm=False)
+        #print(np.max(res), np.min(res))
+        #print(res.dtype)
+        #print(np.min(res)) these are 255 and 0, which is wrong
+        #print(np.max(res))
         res = res - np.min(res)
-        attrs.append(torch.tensor(res/np.max(res)))
+        res = torch.tensor(res/np.max(res))
+        #print(res)
+        #print('res', str(res.shape)) # [256,256,3]
+        #res = res.permute(2,0,1)
+        #save_image(real_img, 'real.png', renorm=False)
+        #save_image(fake_img, 'fake.png', renorm=False)
+        #resgray = np.repeat(np.mean(np.asarray(res), axis=2)[:,:,np.newaxis], 3, axis=2)
+        #print(resgray.shape)
+        #print(resgray[0:10, 0:10, 0:3])
+        #resgray = (resgray*255).astype(np.uint8)
+        #print("maxresgray", str(np.max(resgray)))
+        #print("minresgray", str(np.min(resgray)))
+        #im = Image.fromarray(resgray,'RGB')
+        #im.save('resgraydirectsave.png')
+        #save_image(resgray, 'resgray.png', renorm=False)
+        #save_image((res*255), "res.png", renorm=False)
+        attrs.append(res)
         attrs_names.append("residual")
 
     if "random" in methods:
@@ -127,7 +152,7 @@ def get_attribution(real_img,
         rand = np.abs(scipy.ndimage.filters.gaussian_filter(rand, 4))
         rand = rand - np.min(rand)
         rand = rand/np.max(np.abs(rand))
-        attrs.append(torch.tensor(rand))
+        attrs.append(torch.tensor(rand).permute(2,0,1))
         attrs_names.append("random")
 
     if "gc" in methods:
@@ -202,10 +227,10 @@ def get_attribution(real_img,
         ig_real, delta_real = ig.attribute(imgs[0].unsqueeze(0), baseline, target=classes[0], return_convergence_delta=True)
         ig_diff_1, delta_diff = ig.attribute(imgs[1], imgs[0].unsqueeze(0), target=classes[1], return_convergence_delta=True)
 
-        attrs.append(ig_real[0,0,:,:])
+        attrs.append(ig_real[0,:,:,:])
         attrs_names.append("ig")
 
-        attrs.append(ig_diff_1[0,0,:,:])
+        attrs.append(ig_diff_1[0,:,:,:])
         attrs_names.append("d_ig")
 
         if bidirectional:
@@ -222,47 +247,65 @@ def get_attribution(real_img,
     if "dl" in methods:
         net.zero_grad()
         dl = DeepLift(net)
+        print('imgs[0]', str(imgs[0].shape))
         dl_real = dl.attribute(imgs[0].unsqueeze(0), target=classes[0])
         dl_diff_1 = dl.attribute(imgs[1].unsqueeze(0), baselines=imgs[0].unsqueeze(0), target=classes[1])
 
-        attrs.append(dl_real[0,0,:,:])
+        attrs.append(dl_real[:,:,:])
         attrs_names.append("dl")
 
-        attrs.append(dl_diff_1[0,0,:,:])
+        attrs.append(dl_diff_1[:,:,:])
         attrs_names.append("d_dl")
 
         if bidirectional:
             dl_fake = dl.attribute(imgs[1], target=classes[1])
-            attrs.append(dl_fake[0,0,:,:])
+            attrs.append(dl_fake[:,:,:])
             attrs_names.append("dl_fake")
 
             dl_diff_0 = dl.attribute(imgs[0], baselines=imgs[1], target=classes[0])
-            attrs.append(dl_diff_0[0,0,:,:])
+            attrs.append(dl_diff_0[:,:,:])
             attrs_names.append("d_dl_inv")
 
     # INGRAD
     if "ingrad" in methods:
+        #print("ingrad called:")
         net.zero_grad()
         saliency = Saliency(net)
         grads_real = saliency.attribute(torch.unsqueeze(imgs[0],0), 
                                         target=classes[0]) 
         grads_fake = saliency.attribute(torch.unsqueeze(imgs[1],0), 
-                                        target=classes[1]) 
-
-
+                                        target=classes[1])
+        ##### Noise)
+        #gradsfake = grads_fake.cpu().detach().squeeze()
+        #gradsfake = np.transpose(np.asarray(gradsfake), (1,2,0))
+        #im = Image.fromarray(gradsfake,'RGB')
+        #im.save('gradsfake.png')
+        ###########This is noise
         net.zero_grad()
         input_x_gradient = InputXGradient(net)
-        ingrad_real = input_x_gradient.attribute(torch.unsqueeze(imgs[0],0), target=classes[0])
-
-        ingrad_diff_0 = grads_fake * (imgs[0] - imgs[1])
-   
-        attrs.append(torch.abs(ingrad_real[0,0,:,:]))
+        ingrad_real = (input_x_gradient.attribute(torch.unsqueeze(imgs[0],0), target=classes[0])).squeeze()
+        #print("ingrad_real "+str(ingrad_real.shape))
+        #print("grads_fake "+str(grads_fake.shape))
+        #print("imgs[0] "+str(imgs[0].shape))
+        ingrad_diff_0 = grads_fake.squeeze() * (imgs[0] - imgs[1])
+        #print("ingrad_diff_0 "+ str(ingrad_diff_0.shape))
+        # [3,256,256]
+        #######figuring out noise
+        #export = torch.abs(ingrad_real[:,:,:]).cpu().detach()
+        #export = np.asarray(export)
+        #export = np.transpose(export, (1,2,0))
+        #im = Image.fromarray(export,'RGB')
+        #im.save('ingrad_real.png')
+        ###########This is noise
+        
+        attrs.append(torch.abs(ingrad_real[:,:,:]))
         attrs_names.append("ingrad")
-
-        attrs.append(torch.abs(ingrad_diff_0[0,0,:,:]))
+        #print("attrs shape", str(attrs[-1].shape))
+        attrs.append(torch.abs(ingrad_diff_0[:,:,:]))
         attrs_names.append("d_ingrad")
 
         if bidirectional:
+            print("bidirectionalcheck")
             ingrad_fake = input_x_gradient.attribute(torch.unsqueeze(imgs[1],0), target=classes[1])
             attrs.append(torch.abs(ingrad_fake[0,0,:,:]))
             attrs_names.append("ingrad_fake")
@@ -272,6 +315,8 @@ def get_attribution(real_img,
             attrs_names.append("d_ingrad_inv")
 
     attrs = [a.detach().cpu().numpy() for a in attrs]
+    #check attrs shape
+    #print("attrs[0] ", str(attrs[0].shape))
     attrs_norm = [a/np.max(np.abs(a)) for a in attrs]
 
     return attrs_norm, attrs_names

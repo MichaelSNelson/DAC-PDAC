@@ -4,7 +4,7 @@ import os
 from dac.utils import open_image, save_image
 from dac.attribute import get_attribution
 from dac.mask import get_mask
-
+import numpy as np
 import pathlib
 import platform
 
@@ -43,9 +43,11 @@ parser.add_argument("--downsample_factors", nargs="+", default=[2,2,2,2,2,2,2,2]
 if __name__ == "__main__":
     args = parser.parse_args()
     input_shape = (int(args.input_shape[0]), int(args.input_shape[1]))
-    real_img = open_image(args.realimg, flatten=False, normalize=False)
-    fake_img = open_image(args.fakeimg, flatten=False, normalize=False)
-
+    real_img = open_image(args.realimg, flatten=False, normalize=False).astype(np.float32)
+    fake_img = open_image(args.fakeimg, flatten=False, normalize=False).astype(np.float32)
+    #print('fakeimg', str(fake_img.shape))#256 256 3
+    #print(fake_img[0:10, 0:10, :])
+    print(type(real_img))
     methods = []
 
     if args.ig:
@@ -75,7 +77,7 @@ if __name__ == "__main__":
     mask_sizes = []
 #####################
     # Fixed for now:
-    channels = 1
+    channels = 3
 ###########what###########
     if args.net.lower() in ["vgg", "vgg2d"]:
         net = "Vgg2D"
